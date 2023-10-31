@@ -1,0 +1,219 @@
+#region VEXcode Generated Robot Configuration
+from vex import *
+import urandom
+
+# Brain should be defined by default
+brain=Brain()
+
+# Robot configuration code
+left_motor_a = Motor(Ports.PORT1, GearSetting.RATIO_18_1, False)
+left_motor_b = Motor(Ports.PORT2, GearSetting.RATIO_18_1, False)
+left_drive_smart = MotorGroup(left_motor_a, left_motor_b)
+right_motor_a = Motor(Ports.PORT3, GearSetting.RATIO_18_1, True)
+right_motor_b = Motor(Ports.PORT4, GearSetting.RATIO_18_1, True)
+right_drive_smart = MotorGroup(right_motor_a, right_motor_b)
+drivetrain = DriveTrain(left_drive_smart, right_drive_smart, 319.19, 295, 40, MM, 1)
+Arm = Motor(Ports.PORT5, GearSetting.RATIO_36_1, False)
+Intake_motor_a = Motor(Ports.PORT6, GearSetting.RATIO_18_1, False)
+Intake_motor_b = Motor(Ports.PORT7, GearSetting.RATIO_18_1, True)
+Intake = MotorGroup(Intake_motor_a, Intake_motor_b)
+controller_1 = Controller(PRIMARY)
+
+
+# wait for rotation sensor to fully initialize
+wait(30, MSEC)
+
+
+def play_vexcode_sound(sound_name):
+    # Helper to make playing sounds from the V5 in VEXcode easier and
+    # keeps the code cleaner by making it clear what is happening.
+    print("VEXPlaySound:" + sound_name)
+    wait(5, MSEC)
+
+# add a small delay to make sure we don't print in the middle of the REPL header
+wait(200, MSEC)
+# clear the console to make sure we don't have the REPL in the console
+print("\033[2J")
+
+
+
+# define variables used for controlling motors based on controller inputs
+drivetrain_l_needs_to_be_stopped_controller_1 = False
+drivetrain_r_needs_to_be_stopped_controller_1 = False
+
+# define a task that will handle monitoring inputs from controller_1
+def rc_auto_loop_function_controller_1():
+    global drivetrain_l_needs_to_be_stopped_controller_1, drivetrain_r_needs_to_be_stopped_controller_1, remote_control_code_enabled
+    # process the controller input every 20 milliseconds
+    # update the motors based on the input values
+    while True:
+        if remote_control_code_enabled:
+            
+            # calculate the drivetrain motor velocities from the controller joystick axies
+            # left = axis3
+            # right = axis2
+            drivetrain_left_side_speed = controller_1.axis3.position()
+            drivetrain_right_side_speed = controller_1.axis2.position()
+            
+            # check if the value is inside of the deadband range
+            if drivetrain_left_side_speed < 5 and drivetrain_left_side_speed > -5:
+                # check if the left motor has already been stopped
+                if drivetrain_l_needs_to_be_stopped_controller_1:
+                    # stop the left drive motor
+                    left_drive_smart.stop()
+                    # tell the code that the left motor has been stopped
+                    drivetrain_l_needs_to_be_stopped_controller_1 = False
+            else:
+                # reset the toggle so that the deadband code knows to stop the left motor next
+                # time the input is in the deadband range
+                drivetrain_l_needs_to_be_stopped_controller_1 = True
+            # check if the value is inside of the deadband range
+            if drivetrain_right_side_speed < 5 and drivetrain_right_side_speed > -5:
+                # check if the right motor has already been stopped
+                if drivetrain_r_needs_to_be_stopped_controller_1:
+                    # stop the right drive motor
+                    right_drive_smart.stop()
+                    # tell the code that the right motor has been stopped
+                    drivetrain_r_needs_to_be_stopped_controller_1 = False
+            else:
+                # reset the toggle so that the deadband code knows to stop the right motor next
+                # time the input is in the deadband range
+                drivetrain_r_needs_to_be_stopped_controller_1 = True
+            
+            # only tell the left drive motor to spin if the values are not in the deadband range
+            if drivetrain_l_needs_to_be_stopped_controller_1:
+                left_drive_smart.set_velocity(drivetrain_left_side_speed, PERCENT)
+                left_drive_smart.spin(FORWARD)
+            # only tell the right drive motor to spin if the values are not in the deadband range
+            if drivetrain_r_needs_to_be_stopped_controller_1:
+                right_drive_smart.set_velocity(drivetrain_right_side_speed, PERCENT)
+                right_drive_smart.spin(FORWARD)
+        # wait before repeating the process
+        wait(20, MSEC)
+
+# define variable for remote controller enable/disable
+remote_control_code_enabled = True
+
+rc_auto_loop_thread_controller_1 = Thread(rc_auto_loop_function_controller_1)
+
+#endregion VEXcode Generated Robot Configuration
+
+vexcode_brain_precision = 0
+vexcode_console_precision = 0
+vexcode_controller_1_precision = 0
+myVariable = 0
+intakeDirection = 0
+drivetrainPower = 0
+
+def ondriver_drivercontrol_0():
+    global myVariable, intakeDirection, drivetrainPower, vexcode_brain_precision, vexcode_console_precision, vexcode_controller_1_precision
+    intakeDirection = 0
+
+def when_started1():
+    global myVariable, intakeDirection, drivetrainPower, vexcode_brain_precision, vexcode_console_precision, vexcode_controller_1_precision
+    Intake.set_velocity(75, PERCENT)
+    intakeDirection = 0
+    drivetrainPower = 100
+    drivetrain.set_drive_velocity(drivetrainPower, PERCENT)
+    brain.screen.set_font(FontType.PROP60)
+    while True:
+        brain.screen.set_pen_color(Color.CYAN)
+        brain.screen.print(str(brain.battery.capacity())+" % battery", precision=6 if vexcode_brain_precision is None else vexcode_brain_precision)
+        brain.screen.next_row()
+        brain.screen.set_pen_color(Color.RED)
+        brain.screen.print(str(drivetrain.temperature(PERCENT))+" degrees", precision=6 if vexcode_brain_precision is None else vexcode_brain_precision)
+        brain.screen.next_row()
+        brain.screen.set_pen_color(Color.GREEN)
+        brain.screen.print(str(drivetrain.velocity(PERCENT)) + " % velocity", precision=6 if vexcode_brain_precision is None else vexcode_brain_precision)
+        brain.screen.next_row()
+        brain.screen.set_pen_color(Color.ORANGE)
+        brain.screen.print(str(drivetrain.torque(TorqueUnits.NM))+" NM torque", precision=6 if vexcode_brain_precision is None else vexcode_brain_precision)
+        brain.screen.next_row()
+        wait(1, SECONDS)
+        brain.screen.clear_screen()
+        brain.screen.set_cursor(1, 1)
+        wait(5, MSEC)
+
+def onevent_controller_1buttonL1_pressed_0():
+    global myVariable, intakeDirection, drivetrainPower, vexcode_brain_precision, vexcode_console_precision, vexcode_controller_1_precision
+    if intakeDirection == 1:
+        Intake.stop()
+        intakeDirection = 0
+    else:
+        Intake.spin(FORWARD)
+        intakeDirection = 1
+
+def onevent_controller_1buttonL2_pressed_0():
+    global myVariable, intakeDirection, drivetrainPower, vexcode_brain_precision, vexcode_console_precision, vexcode_controller_1_precision
+    if intakeDirection == -1:
+        Intake.stop()
+        intakeDirection = 0
+    else:
+        Intake.spin(REVERSE)
+        intakeDirection = -1
+
+def onevent_controller_1buttonR1_pressed_0():
+    global myVariable, intakeDirection, drivetrainPower, vexcode_brain_precision, vexcode_console_precision, vexcode_controller_1_precision
+    Arm.spin(FORWARD)
+    while not not controller_1.buttonR1.pressing():
+        wait(5, MSEC)
+    Arm.stop()
+
+def onevent_controller_1buttonR2_pressed_0():
+    global myVariable, intakeDirection, drivetrainPower, vexcode_brain_precision, vexcode_console_precision, vexcode_controller_1_precision
+    Arm.spin(REVERSE)
+    while not not controller_1.buttonR2.pressing():
+        wait(5, MSEC)
+    Arm.stop()
+
+def onevent_controller_1buttonUp_pressed_0():
+    global myVariable, intakeDirection, drivetrainPower, vexcode_brain_precision, vexcode_console_precision, vexcode_controller_1_precision
+    drivetrainPower = drivetrainPower + 10
+    if drivetrainPower > 100:
+        drivetrainPower = 100
+        controller_1.rumble("....")
+    drivetrain.set_drive_velocity(drivetrainPower, PERCENT)
+
+def onevent_controller_1buttonDown_pressed_0():
+    global myVariable, intakeDirection, drivetrainPower, vexcode_brain_precision, vexcode_console_precision, vexcode_controller_1_precision
+    drivetrainPower = drivetrainPower + -10
+    if drivetrainPower < 10:
+        drivetrainPower = 10
+        controller_1.rumble("....")
+    drivetrain.set_drive_velocity(drivetrainPower, PERCENT)
+
+# create a function for handling the starting and stopping of all autonomous tasks
+def vexcode_auton_function():
+    # Start the autonomous control tasks
+    # wait for the driver control period to end
+    while( competition.is_autonomous() and competition.is_enabled() ):
+        # wait 10 milliseconds before checking again
+        wait( 10, MSEC )
+    # Stop the autonomous control tasks
+
+def vexcode_driver_function():
+    # Start the driver control tasks
+    driver_control_task_0 = Thread( ondriver_drivercontrol_0 )
+
+    # wait for the driver control period to end
+    while( competition.is_driver_control() and competition.is_enabled() ):
+        # wait 10 milliseconds before checking again
+        wait( 10, MSEC )
+    # Stop the driver control tasks
+    driver_control_task_0.stop()
+
+
+# register the competition functions
+competition = Competition( vexcode_driver_function, vexcode_auton_function )
+
+# system event handlers
+controller_1.buttonL1.pressed(onevent_controller_1buttonL1_pressed_0)
+controller_1.buttonL2.pressed(onevent_controller_1buttonL2_pressed_0)
+controller_1.buttonR1.pressed(onevent_controller_1buttonR1_pressed_0)
+controller_1.buttonR2.pressed(onevent_controller_1buttonR2_pressed_0)
+controller_1.buttonUp.pressed(onevent_controller_1buttonUp_pressed_0)
+controller_1.buttonDown.pressed(onevent_controller_1buttonDown_pressed_0)
+# add 15ms delay to make sure events are registered correctly.
+wait(15, MSEC)
+
+when_started1()
